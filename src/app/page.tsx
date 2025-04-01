@@ -52,6 +52,7 @@ export default function HomePage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -65,6 +66,8 @@ export default function HomePage() {
     if (savedToken) {
       setToken(savedToken);
       fetchData(savedToken);
+    } else {
+      setInitialLoading(false);
     }
   }, []);
 
@@ -85,14 +88,12 @@ export default function HomePage() {
       setCurrentUser(userRes.data.data.user);
       console.log(userRes.data.data.user);
       setIsAuthenticated(true);
-      // Save token to localStorage after successful authentication
       localStorage.setItem('czechibank_api_key', authToken);
     } catch (error) {
       console.error('Error fetching data:', error);
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           setError('Authentication failed. Please check your API key and try again.');
-          // Clear token from localStorage on authentication failure
           localStorage.removeItem('czechibank_api_key');
         } else if (error.response?.status === 404) {
           setError('API endpoint not found. Please verify the API server is running and the endpoints are correct.');
@@ -107,6 +108,7 @@ export default function HomePage() {
       setIsAuthenticated(false);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   };
 
@@ -294,6 +296,26 @@ export default function HomePage() {
     }, [])
     .reverse(); // Reverse back to chronological order
 
+  // Show loading screen while checking localStorage and fetching initial data
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+        <div className="bg-white/90 backdrop-blur-3xl p-8 rounded-2xl shadow-xl border border-white/20 w-full max-w-md">
+          <div className="flex flex-col items-center">
+            <div className="relative mb-8">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600"></div>
+              {/* <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-indigo-600 font-medium">
+                Loading...
+              </div> */}
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">CzechiBank Analytics</h1>
+            <p className="text-gray-600">Loading your financial data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-500">
       {!isAuthenticated ? (
@@ -336,16 +358,26 @@ export default function HomePage() {
       ) : (
         <div className="container mx-auto p-8">
           <div className="flex justify-between items-center mb-12">
-            <h1 className="text-4xl font-bold text-white">
-              CzechiBank Analytics
-            </h1>
+            <div className="flex items-center space-x-8">
+              <h1 className="text-4xl font-bold text-white">
+                CzechiBank Analytics
+              </h1>
+              {currentUser && (
+                <div className="flex items-center space-x-4 text-white/90">
+                  <div className="h-8 w-px bg-white/20"></div>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{currentUser.name}</span>
+                    <span className="text-sm text-white/70">{currentUser.email}</span>
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => {
                 setToken('');
                 setIsAuthenticated(false);
                 setTransactions([]);
                 setAccounts([]);
-                // Clear token from localStorage on logout
                 localStorage.removeItem('czechibank_api_key');
               }}
               className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-lg hover:shadow-xl"

@@ -82,11 +82,11 @@ export default function HomePage() {
         axios.get(`${baseUrl}/bank-account`, { withCredentials: false, headers }),
         axios.get(`${baseUrl}/user`, { withCredentials: false, headers }),
       ]);
-
+      
       setTransactions(transactionsRes.data.data.transactions);
       setAccounts(accountsRes.data.data.bankAccounts);
-      setCurrentUser(userRes.data.data.user);
-      console.log(userRes.data.data.user);
+      setCurrentUser(userRes.data.data);
+
       setIsAuthenticated(true);
       localStorage.setItem('czechibank_api_key', authToken);
     } catch (error) {
@@ -118,7 +118,6 @@ export default function HomePage() {
     .reduce((acc: { date: string; balance: number }[], tx) => {
       const lastBalance = acc.length > 0 ? acc[acc.length - 1].balance : 0;
       // Check if the current user is receiving money based on user ID
-      console.log(tx);
       const isIncomingTransaction = tx.to.user.id === currentUser?.id;
       const transactionAmount = isIncomingTransaction ? Math.abs(tx.amount) : -Math.abs(tx.amount);
       const newBalance = lastBalance + transactionAmount;
@@ -273,7 +272,6 @@ export default function HomePage() {
         month: 'numeric',
         day: 'numeric'
       });
-      console.log(date);
       
       // Calculate daily volume split into incoming and outgoing
       const existingDateIndex = acc.findIndex(item => item.date === date);

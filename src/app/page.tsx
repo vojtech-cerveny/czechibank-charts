@@ -59,24 +59,28 @@ export default function HomePage() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [selectedBaseUrl, setSelectedBaseUrl] = useState<string>('');
 
-  // Load token from localStorage on mount
+  const baseUrls = ['https://praha.czechibank.ostrava.digital/api/v1', 'https://ostrava.czechibank.ostrava.digital/api/v1'];
+  // Load token and baseUrl from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('czechibank_api_key');
-    if (savedToken) {
+    const savedBaseUrl = localStorage.getItem('czechibank_base_url');
+    if (savedToken && savedBaseUrl) {
       setToken(savedToken);
-      fetchData(savedToken);
+      setSelectedBaseUrl(savedBaseUrl);
+      fetchData(savedToken, savedBaseUrl);
     } else {
       setInitialLoading(false);
     }
   }, []);
 
-  const fetchData = async (authToken: string) => {
+  const fetchData = async (authToken: string, baseUrl: string) => {
     setLoading(true);
     setError(null);
     try {
       const headers = { 'x-api-key': authToken };
-      const baseUrl = 'https://czechibank.ostrava.digital/api/v1';
+      
       const [transactionsRes, accountsRes, userRes] = await Promise.all([
         axios.get(`${baseUrl}/transactions?limit=1000`, { withCredentials: false, headers }),
         axios.get(`${baseUrl}/bank-account`, { withCredentials: false, headers }),
@@ -89,12 +93,14 @@ export default function HomePage() {
 
       setIsAuthenticated(true);
       localStorage.setItem('czechibank_api_key', authToken);
+      localStorage.setItem('czechibank_base_url', baseUrl);
     } catch (error) {
       console.error('Error fetching data:', error);
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           setError('Authentication failed. Please check your API key and try again.');
           localStorage.removeItem('czechibank_api_key');
+          localStorage.removeItem('czechibank_base_url');
         } else if (error.response?.status === 404) {
           setError('API endpoint not found. Please verify the API server is running and the endpoints are correct.');
         } else if (error.code === 'ECONNREFUSED') {
@@ -325,6 +331,24 @@ export default function HomePage() {
             <p className="text-gray-600 mb-8">Access your financial insights and transaction analysis</p>
             <div className="space-y-4">
               <div>
+                <label htmlFor="baseUrl" className="block text-sm font-medium text-gray-700 mb-1">
+                  Select API Base URL
+                </label>
+                <select
+                  id="baseUrl"
+                  value={selectedBaseUrl}
+                  onChange={(e) => setSelectedBaseUrl(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">Select API Provider</option>
+                  {baseUrls.map((url, index) => (
+                    <option key={index} value={url}>
+                      {url.includes('praha') ? 'Praha' : 'Ostrava'} ({url})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-1">
                   Enter your API Key to continue
                 </label>
@@ -339,8 +363,8 @@ export default function HomePage() {
                 />
               </div>
               <button
-                onClick={() => fetchData(token)}
-                disabled={loading}
+                onClick={() => fetchData(token, selectedBaseUrl)}
+                disabled={loading || !selectedBaseUrl || !token}
                 className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Loading...' : 'Continue'}
@@ -373,10 +397,12 @@ export default function HomePage() {
             <button
               onClick={() => {
                 setToken('');
+                setSelectedBaseUrl('');
                 setIsAuthenticated(false);
                 setTransactions([]);
                 setAccounts([]);
                 localStorage.removeItem('czechibank_api_key');
+                localStorage.removeItem('czechibank_base_url');
               }}
               className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-lg hover:shadow-xl"
             >

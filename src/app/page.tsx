@@ -61,7 +61,7 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedBaseUrl, setSelectedBaseUrl] = useState<string>('');
 
-  const baseUrls = ['https://praha.czechibank.ostrava.digital/api/v1', 'https://ostrava.czechibank.ostrava.digital/api/v1'];
+  const baseUrls = ['https://develop.czechibank.ostrava.digital/api/v1', 'https://praha.czechibank.ostrava.digital/api/v1', 'https://ostrava.czechibank.ostrava.digital/api/v1'];
   // Load token and baseUrl from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('czechibank_api_key');
@@ -343,7 +343,7 @@ export default function HomePage() {
                   <option value="">Select API Provider</option>
                   {baseUrls.map((url, index) => (
                     <option key={index} value={url}>
-                      {url.includes('praha') ? 'Praha' : 'Ostrava'} ({url})
+                      {url.includes('develop') ? 'Develop' : url.includes('praha') ? 'Praha' : 'Ostrava'} ({url})
                     </option>
                   ))}
                 </select>
